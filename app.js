@@ -1,490 +1,827 @@
-// ===== ALGORITHM DEFINITIONS =====
-// (Keep the ALGORITHMS array exactly as it is in your original file. 
-//  I am omitting it here for brevity, but ensure it is included at the top of the file.)
-const ALGORITHMS = [
-    {
-        id: 'ascii_weaver',
-        name: 'ASCII Weaver',
-        description: 'Transforms text into color through character code mathematics. Each letter contributes to RGB channels using sum, product, and XOR operations.',
-        inputs: [
-            { id: 'text', label: 'Input Text', type: 'text', value: 'Hello World' },
-            { id: 'intensity', label: 'Intensity', type: 'range', min: 0.5, max: 3, value: 1.5, step: 0.1 }
-        ],
-        compute: (params) => {
-            const text = params.text || '';
-            if (text.length === 0) return { r: 0, g: 0, b: 0 };
-            let sum = 0, product = 1, xor = 0;
-            for (let i = 0; i < text.length; i++) {
-                const code = text.charCodeAt(i);
-                sum += code;
-                product = (product * (code / 10)) % 255;
-                xor ^= code;
-            }
-            const r = (Math.sin(sum / 30) * 127 + 128) * params.intensity;
-            const g = (product * params.intensity * 1.2) % 255;
-            const b = (xor * params.intensity * 1.5) % 255;
-            return { r, g, b };
-        }
-    },
-    {
-        id: 'fluorescent_hum',
-        name: 'Fluorescent Hum',
-        description: 'Simulates the characteristic color temperature of aging fluorescent lighting with adjustable flicker frequency and monitor glare.',
-        inputs: [
-            { id: 'kelvin', label: 'Temperature (K)', type: 'range', min: 2700, max: 6500, value: 4100, step: 100 },
-            { id: 'age', label: 'Bulb Age (years)', type: 'range', min: 0, max: 25, value: 10, step: 1 },
-            { id: 'flicker', label: 'Flicker (Hz)', type: 'range', min: 50, max: 120, value: 60, step: 10 },
-            { id: 'glare', label: 'Screen Glare', type: 'range', min: 0, max: 100, value: 80, step: 5 }
-        ],
-        compute: (params) => {
-            let r, g, b;
-            if (params.kelvin < 5000) {
-                r = 255;
-                g = 200 + ((params.kelvin - 2700) / 2300) * 55;
-                b = 150 + ((params.kelvin - 2700) / 2300) * 105;
-            } else {
-                r = 255 - ((params.kelvin - 5000) / 1500) * 40;
-                g = 255;
-                b = 255;
-            }
-            g += 18;
-            const degradation = params.age * 2.5;
-            r = Math.max(0, r - degradation * 0.5);
-            b = Math.max(0, b - degradation);
-            g = Math.min(255, g + degradation * 0.3);
-            const flickerIntensity = params.flicker / 60;
-            const time = Date.now() / 1000;
-            const flickerModulation = 1 + Math.sin(time * params.flicker * Math.PI * 2) * 0.02 * flickerIntensity;
-            r *= flickerModulation; g *= flickerModulation; b *= flickerModulation;
-            const glareAmount = params.glare / 2;
-            r = Math.min(255, r + glareAmount);
-            g = Math.min(255, g + glareAmount);
-            b = Math.min(255, b + glareAmount);
-            return { r, g, b };
-        }
-    },
-    {
-        id: 'wave_interference',
-        name: 'Wave Interference',
-        description: 'Models color as overlapping sine waves with variable frequency, phase, and amplitude creating complex interference patterns.',
-        inputs: [
-            { id: 'freq_r', label: 'Red Frequency', type: 'range', min: 0.1, max: 5, value: 1, step: 0.1 },
-            { id: 'freq_g', label: 'Green Frequency', type: 'range', min: 0.1, max: 5, value: 1.7, step: 0.1 },
-            { id: 'freq_b', label: 'Blue Frequency', type: 'range', min: 0.1, max: 5, value: 2.3, step: 0.1 },
-            { id: 'phase', label: 'Phase Shift', type: 'range', min: 0, max: 360, value: 0, step: 1 }
-        ],
-        compute: (params) => {
-            const time = Date.now() / 1000;
-            const phaseRad = (params.phase * Math.PI) / 180;
-            const r = (Math.sin(time * params.freq_r + phaseRad) * 127 + 128);
-            const g = (Math.sin(time * params.freq_g + phaseRad + Math.PI / 3) * 127 + 128);
-            const b = (Math.sin(time * params.freq_b + phaseRad + (2 * Math.PI) / 3) * 127 + 128);
-            return { r, g, b };
-        }
-    },
-    {
-        id: 'atmospheric_depth',
-        name: 'Atmospheric Depth',
-        description: 'Simulates how atmosphere affects color at different altitudes and times of day using Rayleigh scattering principles.',
-        inputs: [
-            { id: 'altitude', label: 'Altitude (km)', type: 'range', min: 0, max: 100, value: 0, step: 1 },
-            { id: 'sun_angle', label: 'Sun Angle (°)', type: 'range', min: -90, max: 90, value: 45, step: 1 },
-            { id: 'particles', label: 'Particulate Density', type: 'range', min: 0, max: 100, value: 30, step: 5 }
-        ],
-        compute: (params) => {
-            let r = 135, g = 206, b = 235;
-            const altitudeFactor = 1 - (params.altitude / 100);
-            r *= altitudeFactor; g *= altitudeFactor * 0.9;
-            const sunRad = (params.sun_angle * Math.PI) / 180;
-            const scatterFactor = Math.max(0, Math.sin(sunRad));
-            if (params.sun_angle < 10 && params.sun_angle > -10) {
-                r = 255; g = 150 + scatterFactor * 100; b = 50 + scatterFactor * 100;
-            } else if (params.sun_angle < -10) {
-                r = 10; g = 15; b = 40 + params.altitude * 0.5;
-            } else {
-                r += (255 - r) * (1 - scatterFactor) * 0.3; g *= (0.7 + scatterFactor * 0.3);
-            }
-            const haze = params.particles / 100;
-            r += haze * 50; g += haze * 40; b -= haze * 30;
-            return { r, g, b };
-        }
-    },
-    {
-        id: 'quantum_noise',
-        name: 'Quantum Noise',
-        description: 'Generates pseudo-random color noise using multiple overlapping random number generators with seed-based periodicity.',
-        inputs: [
-            { id: 'seed', label: 'Seed Value', type: 'range', min: 0, max: 1000, value: 42, step: 1 },
-            { id: 'chaos', label: 'Chaos Factor', type: 'range', min: 1, max: 10, value: 5, step: 1 },
-            { id: 'speed', label: 'Evolution Speed', type: 'range', min: 0.1, max: 5, value: 1, step: 0.1 }
-        ],
-        compute: (params) => {
-            const time = Date.now() / 1000 * params.speed;
-            const noise1 = Math.sin(params.seed * 12.9898 + time) * 43758.5453;
-            const noise2 = Math.sin(params.seed * 78.233 + time * 1.3) * 19134.3232;
-            const noise3 = Math.sin(params.seed * 45.164 + time * 0.7) * 56789.1234;
-            const r = ((noise1 - Math.floor(noise1)) * 255 * params.chaos / 5);
-            const g = ((noise2 - Math.floor(noise2)) * 255 * params.chaos / 5);
-            const b = ((noise3 - Math.floor(noise3)) * 255 * params.chaos / 5);
-            return { r, g, b };
-        }
-    },
-    {
-        id: 'chemical_reaction',
-        name: 'Chemical Reaction',
-        description: 'Models color changes during a chemical reaction using temperature, pH, and concentration parameters.',
-        inputs: [
-            { id: 'temperature', label: 'Temperature (°C)', type: 'range', min: -50, max: 300, value: 25, step: 5 },
-            { id: 'ph', label: 'pH Level', type: 'range', min: 0, max: 14, value: 7, step: 0.1 },
-            { id: 'concentration', label: 'Concentration', type: 'range', min: 0, max: 100, value: 50, step: 1 }
-        ],
-        compute: (params) => {
-            let r, g, b;
-            if (params.ph < 4) { r = 255; g = 50; b = 50; }
-            else if (params.ph < 6) { r = 255; g = 150 + (params.ph - 4) * 52.5; b = 50; }
-            else if (params.ph < 8) { r = 100; g = 200; b = 100; }
-            else if (params.ph < 11) { r = 50; g = 100 + (11 - params.ph) * 33; b = 200; }
-            else { r = 150; g = 50; b = 255; }
-            const tempFactor = 0.5 + Math.min(1, (params.temperature + 50) / 350);
-            r *= tempFactor; g *= tempFactor; b *= tempFactor;
-            const concFactor = params.concentration / 100;
-            const gray = (r + g + b) / 3;
-            r = gray + (r - gray) * concFactor;
-            g = gray + (g - gray) * concFactor;
-            b = gray + (b - gray) * concFactor;
-            return { r, g, b };
-        }
-    },
-    {
-        id: 'doppler_shift',
-        name: 'Doppler Shift',
-        description: 'Simulates the color shift of light from objects moving at relativistic speeds using the Doppler effect.',
-        inputs: [
-            { id: 'velocity', label: 'Velocity (% speed of light)', type: 'range', min: -99, max: 99, value: 0, step: 1 },
-            { id: 'base_wavelength', label: 'Base Wavelength (nm)', type: 'range', min: 380, max: 750, value: 550, step: 10 },
-            { id: 'intensity', label: 'Intensity', type: 'range', min: 0.1, max: 2, value: 1, step: 0.1 }
-        ],
-        compute: (params) => {
-            const beta = params.velocity / 100;
-            const gamma = 1 / Math.sqrt(1 - beta * beta);
-            const doppler_factor = gamma * (1 - beta);
-            let wavelength = params.base_wavelength / doppler_factor;
-            wavelength = Math.max(380, Math.min(750, wavelength));
-            let r, g, b;
-            if (wavelength < 440) { r = -(wavelength - 440) / (440 - 380); g = 0; b = 1; }
-            else if (wavelength < 490) { r = 0; g = (wavelength - 440) / (490 - 440); b = 1; }
-            else if (wavelength < 510) { r = 0; g = 1; b = -(wavelength - 510) / (510 - 490); }
-            else if (wavelength < 580) { r = (wavelength - 510) / (580 - 510); g = 1; b = 0; }
-            else if (wavelength < 645) { r = 1; g = -(wavelength - 645) / (645 - 580); b = 0; }
-            else { r = 1; g = 0; b = 0; }
-            let factor = 1;
-            if (wavelength < 420) factor = 0.3 + 0.7 * (wavelength - 380) / (420 - 380);
-            else if (wavelength > 700) factor = 0.3 + 0.7 * (750 - wavelength) / (750 - 700);
-            r *= factor * params.intensity * 255; g *= factor * params.intensity * 255; b *= factor * params.intensity * 255;
-            return { r, g, b };
-        }
-    }
-];
+class LexiChroma {
+    #STORAGE_KEY = 'lexichroma_ultimate_v4';
+    #rafId = null;
+    #pendingRender = false;
+    #pendingHighlight = false;
 
-// ===== APPLICATION STATE =====
-
-class ColorLab {
     constructor() {
-        this.activeAlgorithm = null;
-        this.animationFrame = null;
-        this.frameCount = 0;
-        this.parameters = {};
+        this.dom = this.#initializeDOM();
+        this.state = this.#initializeState();
         
-        this.initializeElements();
-        this.initializeEventListeners();
-        this.startClock();
-        this.renderAlgorithmList();
-        
-        // Load state from URL immediately after rendering
-        this.handleURLParams();
+        this.init();
     }
 
-    initializeElements() {
-        this.elements = {
-            algorithmList: document.getElementById('algorithmList'),
-            welcomeScreen: document.getElementById('welcomeScreen'),
-            laboratoryScreen: document.getElementById('laboratoryScreen'),
-            algorithmTitle: document.getElementById('algorithmTitle'),
-            algorithmDescription: document.getElementById('algorithmDescription'),
-            controlsContainer: document.getElementById('controlsContainer'),
-            colorPreview: document.getElementById('colorPreview'),
-            colorValue: document.getElementById('colorValue'),
-            copyButton: document.getElementById('copyButton'),
-            frameCounter: document.getElementById('frameCounter'),
-            systemClock: document.getElementById('systemClock')
+    #initializeDOM() {
+        const dom = {};
+        
+        // Text editor elements
+        dom.textInput = document.getElementById('textInput');
+        dom.editorHighlights = document.getElementById('editorHighlights');
+        dom.editorBackdrop = document.querySelector('.editor-backdrop');
+        
+        // Canvas elements
+        dom.canvas = document.getElementById('pixelCanvas');
+        dom.ctx = dom.canvas.getContext('2d', { alpha: true });
+        dom.viewport = document.getElementById('viewport');
+        dom.transformLayer = document.getElementById('transformLayer');
+        
+        // Modal elements
+        dom.rendererModal = document.getElementById('rendererModal');
+        dom.algoModal = document.getElementById('algoModal');
+        dom.detailModal = document.getElementById('detailModal');
+        
+        // Input elements
+        dom.imageUpload = document.getElementById('imageUpload');
+        dom.projectName = document.getElementById('projectName');
+        dom.width = document.getElementById('gridWidth');
+        dom.height = document.getElementById('gridHeight');
+        dom.autoHeight = document.getElementById('autoHeight');
+        dom.trimWidth = document.getElementById('trimWidth');
+        dom.emptyFill = document.getElementById('emptyFill');
+        dom.customFillColor = document.getElementById('customFillColor');
+        dom.seed = document.getElementById('colorSeed');
+        dom.exportScale = document.getElementById('exportScale');
+        dom.syntaxHighlight = document.getElementById('syntaxHighlight');
+        
+        // Algorithm inputs
+        dom.algoHueMult = document.getElementById('algoHueMult');
+        dom.algoHueOffset = document.getElementById('algoHueOffset');
+        dom.algoFirstCharBias = document.getElementById('algoFirstCharBias');
+        dom.algoSineInf = document.getElementById('algoSineInf');
+        dom.algoSatBase = document.getElementById('algoSatBase');
+        dom.algoLigBase = document.getElementById('algoLigBase');
+        dom.algoLenInf = document.getElementById('algoLenInf');
+        dom.algoBitShift = document.getElementById('algoBitShift');
+        dom.algoPrimeMod = document.getElementById('algoPrimeMod');
+        dom.algoXor = document.getElementById('algoXor');
+
+        // Detail panel
+        dom.detailSwatch = document.getElementById('detailColorPreview');
+        dom.detailXY = document.getElementById('detailXY');
+        dom.detailWord = document.getElementById('detailWord');
+        dom.detailHash = document.getElementById('detailHash');
+        dom.detailHex = document.getElementById('detailHex');
+        dom.detailRGB = document.getElementById('detailRGB');
+        dom.detailHSL = document.getElementById('detailHSL');
+        
+        // Labels
+        dom.valSeed = document.getElementById('val-seed');
+        dom.wordCounter = document.getElementById('wordCounter');
+        dom.resCounter = document.getElementById('resCounter');
+        dom.zoomLevel = document.getElementById('zoomLevel');
+
+        return dom;
+    }
+
+    #initializeState() {
+        return {
+            text: "",
+            words: [],
+            gridW: 32,
+            gridH: 32,
+            isAutoHeight: true,
+            isTrimWidth: false,
+            emptyFill: 'black',
+            customFill: '#1a1c24',
+            seed: 145,
+            colorizeText: true,
+            projectName: "untitled_project",
+            
+            algo: {
+                hueMult: 1.0,
+                hueOffset: 0,
+                firstCharBias: 0,
+                sineInf: 0,
+                satBase: 60,
+                ligBase: 40,
+                lenInf: 0,
+                bitShift: 5,
+                primeMod: 0,
+                xorVal: 0
+            },
+
+            // Viewport state
+            camX: 0,
+            camY: 0,
+            scale: 1,
+            isDragging: false,
+            lastMouseX: 0,
+            lastMouseY: 0,
+            dragDistance: 0
         };
     }
 
-    initializeEventListeners() {
-        this.elements.copyButton.addEventListener('click', () => this.copyColorValue());
-        
-        // Handle browser back/forward buttons
-        window.addEventListener('popstate', () => {
-            this.handleURLParams();
-        });
+    init() {
+        this.loadFromStorage();
+        this.bindEvents();
+        this.render();
     }
 
-    handleURLParams() {
-        const urlParams = new URLSearchParams(window.location.search);
-        
-        // 1. Handle Fullscreen
-        if (urlParams.has('fullscreen')) {
-            document.body.classList.add('is-fullscreen');
+    bindEvents() {
+        this.#bindTextEvents();
+        this.#bindInputEvents();
+        this.#bindAlgorithmEvents();
+        this.#bindButtonEvents();
+        this.#bindViewportEvents();
+        this.#bindKeyboardEvents();
+    }
+
+    #bindTextEvents() {
+        this.dom.textInput.addEventListener('input', (e) => {
+            this.state.text = e.target.value;
+            this.scheduleRender();
+            this.saveToStorage();
+            if (this.state.colorizeText) this.scheduleHighlight();
+        });
+
+        this.dom.syntaxHighlight.addEventListener('change', (e) => {
+            this.state.colorizeText = e.target.checked;
+            if (!this.state.colorizeText) {
+                this.dom.editorHighlights.innerHTML = '';
+                this.dom.textInput.classList.add('show-text');
+            } else {
+                this.dom.textInput.classList.remove('show-text');
+                this.updateHighlights();
+            }
+            this.saveToStorage();
+        });
+
+        // Set initial state for textarea color
+        if (!this.state.colorizeText) {
+            this.dom.textInput.classList.add('show-text');
         } else {
-            document.body.classList.remove('is-fullscreen');
-        }
-
-        // 2. Handle Algorithm Selection
-        const gamutId = urlParams.get('gamut');
-        
-        if (gamutId) {
-            const algoIndex = ALGORITHMS.findIndex(a => a.id === gamutId);
-            if (algoIndex !== -1) {
-                // Determine parameters from URL or fall back to defaults
-                const targetAlgorithm = ALGORITHMS[algoIndex];
-                const newParams = {};
-
-                targetAlgorithm.inputs.forEach(input => {
-                    const paramValue = urlParams.get(input.id);
-                    if (paramValue !== null) {
-                        // Type conversion
-                        if (input.type === 'text') {
-                            newParams[input.id] = paramValue;
-                        } else {
-                            newParams[input.id] = parseFloat(paramValue);
-                        }
-                    } else {
-                        newParams[input.id] = input.value;
-                    }
-                });
-
-                // Load algorithm with these specific parameters
-                this.loadAlgorithm(algoIndex, newParams);
-            }
-        } else if (this.activeAlgorithm) {
-            // If we navigated back to root/empty, return to welcome screen
-            this.stopAnimation();
-            this.activeAlgorithm = null;
-            this.elements.welcomeScreen.classList.add('active');
-            this.elements.laboratoryScreen.classList.remove('active');
-            
-            // Clear active buttons
-            const buttons = this.elements.algorithmList.querySelectorAll('.algorithm-btn');
-            buttons.forEach(btn => btn.classList.remove('active'));
+            this.dom.textInput.classList.remove('show-text');
         }
     }
 
-    updateURL() {
-        if (!this.activeAlgorithm) return;
-
-        const url = new URL(window.location);
+    #bindInputEvents() {
+        // Basic inputs
+        this.#bindInput(this.dom.width, 'gridW', true);
+        this.#bindInput(this.dom.seed, 'seed', true, this.dom.valSeed);
         
-        // Check if we are currently in fullscreen mode
-        const isFullscreen = document.body.classList.contains('is-fullscreen');
+        this.dom.projectName.addEventListener('input', (e) => {
+            this.state.projectName = e.target.value.replace(/[^a-z0-9_-]/gi, '_');
+            this.saveToStorage();
+        });
 
-        // Create a FRESH set of parameters to avoid stacking old ones
-        const newParams = new URLSearchParams();
-
-        // 1. Set the active gamut
-        newParams.set('gamut', this.activeAlgorithm.id);
-
-        // 2. Add ONLY the parameters relevant to the current algorithm
-        for (const [key, value] of Object.entries(this.parameters)) {
-            newParams.set(key, value);
-        }
-
-        // 3. Re-apply fullscreen flag if necessary
-        if (isFullscreen) {
-            newParams.set('fullscreen', '');
-        }
-
-        // Replace the search string entirely
-        url.search = newParams.toString();
-
-        // Update browser URL without reloading
-        window.history.replaceState({}, '', url);
-    }
-
-    startClock() {
-        setInterval(() => {
-            const now = new Date();
-            const timeString = now.toLocaleTimeString('en-US', { 
-                hour12: false,
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit'
-            });
-            this.elements.systemClock.textContent = timeString;
-        }, 1000);
-    }
-
-    renderAlgorithmList() {
-        this.elements.algorithmList.innerHTML = '';
+        // Logic controls
+        this.dom.autoHeight.addEventListener('change', (e) => {
+            this.state.isAutoHeight = e.target.checked;
+            this.dom.height.disabled = this.state.isAutoHeight;
+            this.scheduleRender();
+            this.saveToStorage();
+        });
         
-        ALGORITHMS.forEach((algorithm, index) => {
-            const button = document.createElement('button');
-            button.className = 'algorithm-btn';
-            button.textContent = algorithm.name;
-            button.addEventListener('click', () => {
-                // When clicking menu, load defaults
-                const defaults = {};
-                algorithm.inputs.forEach(inp => defaults[inp.id] = inp.value);
-                this.loadAlgorithm(index, defaults);
-                
-                // Remove fullscreen on manual navigation if desired, 
-                // or keep it. Here we remove it to show controls.
-                document.body.classList.remove('is-fullscreen');
-                this.updateURL();
-            });
-            this.elements.algorithmList.appendChild(button);
+        this.dom.trimWidth.addEventListener('change', (e) => {
+            this.state.isTrimWidth = e.target.checked;
+            this.scheduleRender();
+            this.saveToStorage();
+        });
+
+        this.dom.emptyFill.addEventListener('change', (e) => {
+            this.state.emptyFill = e.target.value;
+            this.toggleCustomColor();
+            this.scheduleRender();
+            this.saveToStorage();
+        });
+
+        this.dom.customFillColor.addEventListener('input', (e) => {
+            this.state.customFill = e.target.value;
+            if (this.state.emptyFill === 'custom') this.scheduleRender();
+            this.saveToStorage();
         });
     }
 
-    // Modified to accept optional params object
-    loadAlgorithm(index, customParams = null) {
-        this.activeAlgorithm = ALGORITHMS[index];
-        
-        // Update active button state
-        const buttons = this.elements.algorithmList.querySelectorAll('.algorithm-btn');
-        buttons.forEach((btn, i) => {
-            btn.classList.toggle('active', i === index);
-        });
+    #bindAlgorithmEvents() {
+        const algoBindings = [
+            { elem: this.dom.algoHueMult, key: 'hueMult', isFloat: true },
+            { elem: this.dom.algoHueOffset, key: 'hueOffset' },
+            { elem: this.dom.algoFirstCharBias, key: 'firstCharBias' },
+            { elem: this.dom.algoSineInf, key: 'sineInf' },
+            { elem: this.dom.algoSatBase, key: 'satBase' },
+            { elem: this.dom.algoLigBase, key: 'ligBase' },
+            { elem: this.dom.algoLenInf, key: 'lenInf' },
+            { elem: this.dom.algoBitShift, key: 'bitShift' },
+            { elem: this.dom.algoPrimeMod, key: 'primeMod' },
+            { elem: this.dom.algoXor, key: 'xorVal' }
+        ];
 
-        // Switch screens
-        this.elements.welcomeScreen.classList.remove('active');
-        this.elements.laboratoryScreen.classList.add('active');
-
-        // Update header
-        this.elements.algorithmTitle.textContent = this.activeAlgorithm.name;
-        this.elements.algorithmDescription.textContent = this.activeAlgorithm.description;
-
-        // Initialize parameters (Use customParams if provided, otherwise defaults)
-        this.parameters = customParams || {};
-        if (!customParams) {
-            this.activeAlgorithm.inputs.forEach(input => {
-                this.parameters[input.id] = input.value;
+        algoBindings.forEach(({ elem, key, isFloat = false }) => {
+            elem.addEventListener('input', (e) => {
+                let val = parseFloat(e.target.value);
+                if (!isFloat) val = parseInt(val);
+                this.state.algo[key] = val;
+                this.scheduleRender();
+                this.saveToStorage();
+                if (this.state.colorizeText) this.scheduleHighlight();
             });
+        });
+    }
+
+    #bindButtonEvents() {
+        // Modal controls
+        document.getElementById('openRendererBtn').addEventListener('click', () => this.openRenderer());
+        document.getElementById('closeRendererBtn').addEventListener('click', () => this.closeRenderer());
+        document.getElementById('openAlgoSettings').addEventListener('click', () => this.openModal(this.dom.algoModal));
+        document.getElementById('closeAlgoBtn').addEventListener('click', () => this.closeModal(this.dom.algoModal));
+        document.getElementById('closeDetailBtn').addEventListener('click', () => this.closeModal(this.dom.detailModal));
+        
+        // Action buttons
+        document.getElementById('clearTextBtn').addEventListener('click', () => this.clearText());
+        document.getElementById('fitScreenBtn').addEventListener('click', () => this.fitToScreen());
+        document.getElementById('downloadBtn').addEventListener('click', () => this.downloadWithMetadata());
+        document.getElementById('resetAlgoBtn').addEventListener('click', () => this.resetAlgo());
+
+        // Image upload
+        this.dom.imageUpload.addEventListener('change', (e) => this.handleImageRestore(e));
+    }
+
+    #bindViewportEvents() {
+        const vp = this.dom.viewport;
+        vp.addEventListener('wheel', (e) => this.handleWheel(e), { passive: false });
+        vp.addEventListener('mousedown', (e) => this.handleMouseDown(e));
+        window.addEventListener('mousemove', (e) => this.handleMouseMove(e));
+        window.addEventListener('mouseup', (e) => this.handleMouseUp(e));
+    }
+
+    #bindKeyboardEvents() {
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                this.closeRenderer();
+                this.closeModal(this.dom.algoModal);
+                this.closeModal(this.dom.detailModal);
+            }
+        });
+    }
+
+    #bindInput(elem, stateKey, isInt = false, labelElem = null) {
+        elem.addEventListener('input', (e) => {
+            let val = parseFloat(e.target.value);
+            if (isInt) val = parseInt(e.target.value) || 1;
+            this.state[stateKey] = val;
+            if (labelElem) labelElem.textContent = val;
+            this.scheduleRender();
+            this.saveToStorage();
+        });
+    }
+
+    // --- Performance Optimization ---
+    scheduleRender() {
+        if (this.#pendingRender) return;
+        this.#pendingRender = true;
+        this.#rafId = requestAnimationFrame(() => {
+            this.render();
+            this.#pendingRender = false;
+        });
+    }
+
+    scheduleHighlight() {
+        if (this.#pendingHighlight) return;
+        this.#pendingHighlight = true;
+        requestAnimationFrame(() => {
+            this.updateHighlights();
+            this.#pendingHighlight = false;
+        });
+    }
+
+    // --- Core Rendering ---
+    render() {
+        this.state.words = this.state.text.trim().split(/\s+/).filter(w => w.length > 0);
+        const wordCount = this.state.words.length;
+        
+        const { renderWidth, renderHeight } = this.#calculateDimensions(wordCount);
+        
+        this.#setupCanvas(renderWidth, renderHeight);
+        this.#renderBackground(renderWidth, renderHeight);
+        this.#renderWords(renderWidth, renderHeight);
+
+        this.#updateCounters(wordCount, renderWidth, renderHeight);
+    }
+
+    #calculateDimensions(wordCount) {
+        let renderWidth = this.state.gridW;
+        
+        // Width logic
+        if (this.state.isTrimWidth) {
+            renderWidth = Math.max(1, wordCount > 0 ? Math.min(wordCount, this.state.gridW) : 1);
         }
 
-        // Render controls
-        this.renderControls();
+        // Height logic
+        let renderHeight = this.state.gridH;
+        if (this.state.isAutoHeight) {
+            renderHeight = Math.max(1, Math.ceil(wordCount / this.state.gridW));
+            this.dom.height.value = renderHeight;
+            this.state.gridH = renderHeight;
+        }
 
-        // Start animation loop
-        this.stopAnimation();
-        this.startAnimation();
+        return { renderWidth, renderHeight };
     }
 
-    renderControls() {
-        this.elements.controlsContainer.innerHTML = '';
-
-        this.activeAlgorithm.inputs.forEach(input => {
-            const group = document.createElement('div');
-            group.className = 'control-group';
-
-            // Use current parameter value, fallback to default
-            const currentValue = this.parameters[input.id] !== undefined ? this.parameters[input.id] : input.value;
-
-            const label = document.createElement('div');
-            label.className = 'control-label';
-            label.innerHTML = `
-                <span>${input.label}</span>
-                <span class="control-value" id="value-${input.id}">
-                    ${input.type === 'range' ? parseFloat(currentValue).toFixed(input.step < 1 ? 1 : 0) : currentValue}
-                </span>
-            `;
-
-            let inputElement;
-            
-            if (input.type === 'text') {
-                inputElement = document.createElement('input');
-                inputElement.type = 'text';
-                inputElement.value = currentValue;
-            } else if (input.type === 'range') {
-                inputElement = document.createElement('input');
-                inputElement.type = 'range';
-                inputElement.min = input.min;
-                inputElement.max = input.max;
-                inputElement.value = currentValue;
-                inputElement.step = input.step || 1;
-            } else if (input.type === 'number') {
-                inputElement = document.createElement('input');
-                inputElement.type = 'number';
-                inputElement.min = input.min;
-                inputElement.max = input.max;
-                inputElement.value = currentValue;
-            }
-
-            inputElement.addEventListener('input', (e) => {
-                const value = input.type === 'text' ? e.target.value : parseFloat(e.target.value);
-                this.parameters[input.id] = value;
-                
-                const valueDisplay = document.getElementById(`value-${input.id}`);
-                if (valueDisplay) {
-                    valueDisplay.textContent = input.type === 'range' ? value.toFixed(input.step < 1 ? 1 : 0) : value;
-                }
-
-                // Update URL whenever a value changes
-                this.updateURL();
-            });
-
-            group.appendChild(label);
-            group.appendChild(inputElement);
-            this.elements.controlsContainer.appendChild(group);
-        });
+    #setupCanvas(width, height) {
+        this.dom.canvas.width = width;
+        this.dom.canvas.height = height;
     }
 
-    startAnimation() {
-        const animate = () => {
-            if (!this.activeAlgorithm) return;
-
-            const result = this.activeAlgorithm.compute(this.parameters);
-            
-            const r = Math.max(0, Math.min(255, Math.round(result.r)));
-            const g = Math.max(0, Math.min(255, Math.round(result.g)));
-            const b = Math.max(0, Math.min(255, Math.round(result.b)));
-
-            const colorString = `rgb(${r}, ${g}, ${b})`;
-            
-            this.elements.colorPreview.style.backgroundColor = colorString;
-            this.elements.colorValue.textContent = colorString;
-
-            this.frameCount++;
-            if (this.frameCount % 60 === 0) {
-                this.elements.frameCounter.textContent = `${this.frameCount} frames`;
-            }
-
-            this.animationFrame = requestAnimationFrame(animate);
+    #renderBackground(width, height) {
+        this.dom.ctx.clearRect(0, 0, width, height);
+        
+        const fillStyles = {
+            transparent: 'transparent',
+            custom: this.state.customFill
         };
 
-        animate();
-    }
-
-    stopAnimation() {
-        if (this.animationFrame) {
-            cancelAnimationFrame(this.animationFrame);
-            this.animationFrame = null;
+        const fillColor = fillStyles[this.state.emptyFill];
+        if (fillColor && fillColor !== 'transparent') {
+            this.dom.ctx.fillStyle = fillColor;
+            this.dom.ctx.fillRect(0, 0, width, height);
         }
     }
 
-    copyColorValue() {
-        const colorText = this.elements.colorValue.textContent;
-        navigator.clipboard.writeText(colorText).then(() => {
-            const originalText = this.elements.copyButton.innerHTML;
-            this.elements.copyButton.innerHTML = '<span style="color: #10b981;">✓</span>';
-            setTimeout(() => {
-                this.elements.copyButton.innerHTML = originalText;
-            }, 1500);
+    #renderWords(width, height) {
+        this.state.words.forEach((word, index) => {
+            const x = index % this.state.gridW;
+            const y = Math.floor(index / this.state.gridW);
+            
+            if (x < width && y < height) {
+                const data = this.getPixelData(word, index);
+                this.dom.ctx.fillStyle = data.hslString;
+                this.dom.ctx.fillRect(x, y, 1, 1);
+            }
         });
+    }
+
+    #updateCounters(wordCount, width, height) {
+        this.dom.wordCounter.textContent = wordCount;
+        this.dom.resCounter.textContent = `${width} x ${height}`;
+    }
+
+    // --- Text Highlighting ---
+    updateHighlights() {
+        if (!this.state.colorizeText) return;
+        
+        const text = this.state.text;
+        const tokens = text.split(/(\s+)/);
+        let html = '';
+        let wordIndex = 0;
+
+        tokens.forEach(token => {
+            if (token.trim().length === 0) {
+                html += this.#escapeHtml(token);
+            } else {
+                const color = this.getPixelData(token, wordIndex).hslString;
+                html += `<span style="color: ${color}; text-shadow: 0 0 1px rgba(0,0,0,0.8);">${this.#escapeHtml(token)}</span>`;
+                wordIndex++;
+            }
+        });
+        
+        if (text.endsWith('\n')) html += '<br>';
+        
+        this.dom.editorHighlights.innerHTML = html;
+    }
+
+    #escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    // --- Color Algorithm ---
+    getPixelData(word, index) {
+        if (!word) return { hslString: 'transparent' };
+        
+        const { seed, algo } = this.state;
+        let hash = this.#computeHash(word, seed, algo);
+        
+        const { h, s, l } = this.#computeHSL(hash, word, algo);
+        
+        return {
+            h: h.toFixed(1),
+            s: s.toFixed(1), 
+            l: l.toFixed(1),
+            hslString: `hsl(${h.toFixed(1)}, ${s.toFixed(1)}%, ${l.toFixed(1)}%)`,
+            hash: hash,
+            word: word
+        };
+    }
+
+    #computeHash(word, seed, algo) {
+        let hash = 0;
+        for (let i = 0; i < word.length; i++) {
+            hash = ((hash << algo.bitShift) - hash) + word.charCodeAt(i) + seed;
+            hash |= 0;
+        }
+        
+        if (algo.xorVal > 0) hash ^= algo.xorVal;
+        if (algo.primeMod > 1) hash = hash % algo.primeMod;
+        
+        return hash;
+    }
+
+    #computeHSL(hash, word, algo) {
+        const absHash = Math.abs(hash);
+        
+        // Hue calculation
+        let hue = (absHash * algo.hueMult + algo.hueOffset);
+        if (algo.firstCharBias > 0) hue += (word.charCodeAt(0) * algo.firstCharBias);
+        if (algo.sineInf > 0) hue += Math.sin(absHash) * algo.sineInf;
+        hue = hue % 360;
+
+        // Saturation calculation
+        let sat = algo.satBase;
+        if (algo.lenInf !== 0) sat += (word.length * algo.lenInf);
+        sat += ((absHash >> 8) % 20) - 10;
+        sat = Math.max(0, Math.min(100, sat));
+
+        // Lightness calculation
+        let lig = algo.ligBase;
+        lig += ((absHash >> 16) % 20) - 10;
+        lig = Math.max(0, Math.min(100, lig));
+
+        return { h: hue, s: sat, l: lig };
+    }
+
+    // --- UI Controls ---
+    toggleCustomColor() {
+        this.dom.customFillColor.classList.toggle('hidden', this.state.emptyFill !== 'custom');
+    }
+
+    // --- Viewport Controls ---
+    handleMouseDown(e) {
+        if (e.button === 0) {
+            this.state.isDragging = true;
+            this.state.lastMouseX = e.clientX;
+            this.state.lastMouseY = e.clientY;
+            this.state.dragDistance = 0;
+            this.dom.viewport.style.cursor = 'grabbing';
+        }
+    }
+
+    handleMouseMove(e) {
+        if (this.state.isDragging) {
+            const dx = e.clientX - this.state.lastMouseX;
+            const dy = e.clientY - this.state.lastMouseY;
+            this.state.camX += dx;
+            this.state.camY += dy;
+            this.state.lastMouseX = e.clientX;
+            this.state.lastMouseY = e.clientY;
+            this.state.dragDistance += Math.abs(dx) + Math.abs(dy);
+            this.updateTransform();
+        }
+    }
+
+    handleMouseUp(e) {
+        this.state.isDragging = false;
+        this.dom.viewport.style.cursor = 'default';
+        
+        if (this.state.dragDistance < 5 && e.target === this.dom.canvas) {
+            this.handlePixelClick(e);
+        }
+    }
+
+    handleWheel(e) {
+        if (this.dom.rendererModal.classList.contains('hidden')) return;
+        
+        e.preventDefault();
+        const rect = this.dom.viewport.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
+        
+        const oldScale = this.state.scale;
+        let newScale = oldScale * (e.deltaY < 0 ? 1.15 : 0.85);
+        newScale = Math.min(Math.max(0.1, newScale), 500);
+        
+        const scaleRatio = newScale / oldScale;
+        this.state.camX = mouseX - (mouseX - this.state.camX) * scaleRatio;
+        this.state.camY = mouseY - (mouseY - this.state.camY) * scaleRatio;
+        this.state.scale = newScale;
+        
+        this.updateTransform();
+    }
+
+    handlePixelClick(e) {
+        const rect = this.dom.viewport.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
+        
+        const cx = Math.floor((mouseX - this.state.camX) / this.state.scale);
+        const cy = Math.floor((mouseY - this.state.camY) / this.state.scale);
+        
+        if (cx >= 0 && cx < this.dom.canvas.width && cy >= 0 && cy < this.dom.canvas.height) {
+            const index = cy * this.state.gridW + cx;
+            
+            if (index < this.state.words.length) {
+                const word = this.state.words[index];
+                if (word) {
+                    const data = this.getPixelData(word, index);
+                    this.openDetailModal(data, cx, cy);
+                }
+            }
+        }
+    }
+
+    updateTransform() {
+        this.dom.transformLayer.style.transform = 
+            `translate3d(${this.state.camX}px, ${this.state.camY}px, 0) scale(${this.state.scale})`;
+        this.dom.zoomLevel.textContent = `${Math.round(this.state.scale * 100)}%`;
+    }
+
+    fitToScreen() {
+        const vpW = this.dom.viewport.clientWidth;
+        const vpH = this.dom.viewport.clientHeight;
+        const cnvW = this.dom.canvas.width;
+        const cnvH = this.dom.canvas.height;
+        const margin = 150;
+        
+        const scaleX = (vpW - margin) / cnvW;
+        const scaleY = (vpH - margin) / cnvH;
+        let fitScale = Math.min(scaleX, scaleY);
+        fitScale = Math.min(Math.max(fitScale, 0.5), 100);
+        
+        this.state.scale = fitScale;
+        this.state.camX = (vpW - (cnvW * fitScale)) / 2;
+        this.state.camY = (vpH - (cnvH * fitScale)) / 2;
+        
+        this.updateTransform();
+    }
+
+    // --- Modal Controls ---
+    openRenderer() {
+        this.dom.rendererModal.classList.remove('hidden');
+        requestAnimationFrame(() => this.fitToScreen());
+    }
+
+    closeRenderer() {
+        this.dom.rendererModal.classList.add('hidden');
+    }
+
+    openModal(modal) {
+        modal.classList.remove('hidden');
+    }
+
+    closeModal(modal) {
+        modal.classList.add('hidden');
+    }
+
+    openDetailModal(data, x, y) {
+        const { h, s, l, hslString, word, hash } = data;
+        const rgb = this.hslToRgb(h, s, l);
+        
+        this.dom.detailSwatch.style.backgroundColor = hslString;
+        this.dom.detailXY.textContent = `X:${x} Y:${y}`;
+        this.dom.detailWord.textContent = word;
+        this.dom.detailHash.textContent = hash;
+        this.dom.detailHSL.textContent = `${Math.round(h)}°, ${Math.round(s)}%, ${Math.round(l)}%`;
+        this.dom.detailRGB.textContent = `${rgb[0]}, ${rgb[1]}, ${rgb[2]}`;
+        this.dom.detailHex.textContent = "#" + rgb.map(x => 
+            x.toString(16).padStart(2, '0')
+        ).join("").toUpperCase();
+        
+        this.openModal(this.dom.detailModal);
+    }
+
+    // --- Actions ---
+    clearText() {
+        if (confirm("Clear text?")) {
+            this.dom.textInput.value = "";
+            this.state.text = "";
+            this.scheduleRender();
+            this.updateHighlights();
+            this.saveToStorage();
+        }
+    }
+
+    resetAlgo() {
+        this.state.algo = {
+            hueMult: 1.0,
+            hueOffset: 0,
+            firstCharBias: 0,
+            sineInf: 0,
+            satBase: 60,
+            ligBase: 40,
+            lenInf: 0,
+            bitShift: 5,
+            primeMod: 0,
+            xorVal: 0
+        };
+        
+        this.updateAllInputs();
+        this.scheduleRender();
+        if (this.state.colorizeText) this.scheduleHighlight();
+        this.saveToStorage();
+    }
+
+    // --- PNG Export & Import ---
+    async downloadWithMetadata() {
+        if (!this.state.words.length) return;
+        
+        const scale = parseInt(this.dom.exportScale.value) || 20;
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = this.dom.canvas.width * scale;
+        tempCanvas.height = this.dom.canvas.height * scale;
+        
+        const tCtx = tempCanvas.getContext('2d');
+        tCtx.imageSmoothingEnabled = false;
+        tCtx.drawImage(this.dom.canvas, 0, 0, tempCanvas.width, tempCanvas.height);
+
+        tempCanvas.toBlob(async (blob) => {
+            const metaData = JSON.stringify({
+                text: this.state.text,
+                settings: {
+                    gridW: this.state.gridW,
+                    seed: this.state.seed,
+                    algo: this.state.algo,
+                    emptyFill: this.state.emptyFill,
+                    customFill: this.state.customFill,
+                    trimWidth: this.state.isTrimWidth
+                }
+            });
+            
+            const newBlob = await this.injectPngMetadata(blob, "LexiChromaData", metaData);
+            const link = document.createElement('a');
+            link.download = `${this.state.projectName || 'lexichroma'}.png`;
+            link.href = URL.createObjectURL(newBlob);
+            link.click();
+            URL.revokeObjectURL(link.href);
+        }, 'image/png');
+    }
+
+    async injectPngMetadata(blob, key, value) {
+        const buffer = await blob.arrayBuffer();
+        const data = new Uint8Array(buffer);
+        let i = 8;
+        
+        while (i < data.length) {
+            const len = new DataView(data.buffer).getUint32(i);
+            const type = new TextDecoder().decode(data.slice(i + 4, i + 8));
+            if (type === 'IEND') break;
+            i += 12 + len;
+        }
+        
+        const keyBytes = new TextEncoder().encode(key);
+        const valBytes = new TextEncoder().encode(value);
+        const chunkData = new Uint8Array(keyBytes.length + 1 + valBytes.length);
+        chunkData.set(keyBytes, 0);
+        chunkData[keyBytes.length] = 0;
+        chunkData.set(valBytes, keyBytes.length + 1);
+        
+        const chunkLen = chunkData.length;
+        const totalChunkLen = 12 + chunkLen;
+        const chunk = new Uint8Array(totalChunkLen);
+        const view = new DataView(chunk.buffer);
+        
+        view.setUint32(0, chunkLen);
+        chunk.set(new TextEncoder().encode("tEXt"), 4);
+        chunk.set(chunkData, 8);
+        
+        const finalFile = new Uint8Array(i + totalChunkLen + 12);
+        finalFile.set(data.slice(0, i), 0);
+        finalFile.set(chunk, i);
+        finalFile.set(data.slice(i), i + totalChunkLen);
+        
+        return new Blob([finalFile], { type: 'image/png' });
+    }
+
+    async handleImageRestore(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        try {
+            const buf = await file.arrayBuffer();
+            const data = this.#extractPngMetadata(buf);
+            
+            if (data && confirm("Restore project?")) {
+                this.restoreState(data);
+            } else {
+                alert("No LexiChroma data found.");
+            }
+        } catch (error) {
+            console.error("Error restoring image:", error);
+            alert("Error reading file.");
+        }
+    }
+
+    #extractPngMetadata(buffer) {
+        const view = new DataView(buffer);
+        let i = 8;
+        
+        while (i < buffer.byteLength) {
+            const len = view.getUint32(i);
+            const typeArr = new Uint8Array(buffer, i + 4, 4);
+            const type = new TextDecoder().decode(typeArr);
+            
+            if (type === 'tEXt') {
+                const data = new Uint8Array(buffer, i + 8, len);
+                const key = "LexiChromaData";
+                const keyBytes = new TextEncoder().encode(key);
+                
+                let match = true;
+                for (let k = 0; k < keyBytes.length; k++) {
+                    if (data[k] !== keyBytes[k]) {
+                        match = false;
+                        break;
+                    }
+                }
+                
+                if (match) {
+                    const jsonStr = new TextDecoder().decode(data.slice(key.length + 1));
+                    return JSON.parse(jsonStr);
+                }
+            }
+            i += 12 + len;
+        }
+        return null;
+    }
+
+    // --- State Management ---
+    restoreState(data) {
+        this.state.text = data.text;
+        this.state.gridW = data.settings.gridW;
+        this.state.seed = data.settings.seed;
+        this.state.algo = data.settings.algo;
+        this.state.emptyFill = data.settings.emptyFill || 'black';
+        this.state.customFill = data.settings.customFill || '#1a1c24';
+        this.state.isTrimWidth = data.settings.trimWidth || false;
+        
+        this.updateAllInputs();
+        this.toggleCustomColor();
+        this.scheduleRender();
+        if (this.state.colorizeText) this.scheduleHighlight();
+        this.saveToStorage();
+    }
+
+    saveToStorage() {
+        const data = {
+            text: this.state.text,
+            gridW: this.state.gridW,
+            gridH: this.state.gridH,
+            isAutoHeight: this.state.isAutoHeight,
+            isTrimWidth: this.state.isTrimWidth,
+            emptyFill: this.state.emptyFill,
+            customFill: this.state.customFill,
+            seed: this.state.seed,
+            algo: this.state.algo,
+            projectName: this.state.projectName,
+            colorizeText: this.state.colorizeText
+        };
+        
+        localStorage.setItem(this.#STORAGE_KEY, JSON.stringify(data));
+    }
+
+    loadFromStorage() {
+        const raw = localStorage.getItem(this.#STORAGE_KEY);
+        if (!raw) return;
+        
+        try {
+            const data = JSON.parse(raw);
+            this.state = { ...this.state, ...data };
+            this.updateAllInputs();
+            this.toggleCustomColor();
+            
+            if (this.state.colorizeText) {
+                setTimeout(() => this.updateHighlights(), 100);
+            }
+        } catch (e) {
+            console.error("Load failed", e);
+        }
+    }
+
+    updateAllInputs() {
+        // Basic inputs
+        this.dom.textInput.value = this.state.text;
+        this.dom.width.value = this.state.gridW;
+        this.dom.height.value = this.state.gridH;
+        this.dom.autoHeight.checked = this.state.isAutoHeight;
+        this.dom.trimWidth.checked = this.state.isTrimWidth;
+        this.dom.emptyFill.value = this.state.emptyFill;
+        this.dom.customFillColor.value = this.state.customFill;
+        this.dom.seed.value = this.state.seed;
+        this.dom.valSeed.textContent = this.state.seed;
+        this.dom.projectName.value = this.state.projectName;
+        this.dom.syntaxHighlight.checked = this.state.colorizeText;
+        // Show/hide text color based on colorizeText
+        if (!this.state.colorizeText) {
+            this.dom.textInput.classList.add('show-text');
+        } else {
+            this.dom.textInput.classList.remove('show-text');
+        }
+    }
+
+    // --- Utility Methods ---
+    hslToRgb(h, s, l) {
+        s /= 100;
+        l /= 100;
+        const k = n => (n + h / 30) % 12;
+        const a = s * Math.min(l, 1 - l);
+        const f = n => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
+        return [
+            Math.round(f(0) * 255),
+            Math.round(f(8) * 255),
+            Math.round(f(4) * 255)
+        ];
     }
 }
 
-// ===== INITIALIZE APPLICATION =====
-
+// Initialize application when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
-    new ColorLab();
+    new LexiChroma();
 });
