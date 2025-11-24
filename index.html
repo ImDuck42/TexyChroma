@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chromatic Laboratory</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="branding">
+                <h1 class="logo">CHROMA<span class="accent-dot">.</span>LAB</h1>
+                <p class="version">v5.0.1</p>
+            </div>
+            
+            <nav class="navigation">
+                <h2 class="nav-title">Color Algorithms</h2>
+                <div id="algorithmList" class="algorithm-list"></div>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="stats">
+                    <span id="frameCounter">0 frames</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Workspace -->
+        <main class="workspace">
+            <!-- Top Status Bar -->
+            <header class="status-bar">
+                <div class="status-left">
+                    <span class="status-indicator"></span>
+                    <span>ACTIVE</span>
+                </div>
+                <div class="status-right">
+                    <span id="systemClock">--:--:--</span>
+                </div>
+            </header>
+
+            <!-- Welcome Screen -->
+            <section id="welcomeScreen" class="screen active">
+                <div class="welcome-content">
+                    <h2>Parametric Color Generation</h2>
+                    <p>Select an algorithm from the sidebar to begin exploring mathematical color spaces.</p>
+                    <div class="welcome-grid">
+                        <div class="info-card">
+                            <span class="info-number">7</span>
+                            <span class="info-label">Algorithms</span>
+                        </div>
+                        <div class="info-card">
+                            <span class="info-number">∞</span>
+                            <span class="info-label">Combinations</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Laboratory Screen -->
+            <section id="laboratoryScreen" class="screen">
+                <div class="lab-grid">
+                    <!-- Color Display -->
+                    <div class="display-panel">
+                        <div id="colorPreview" class="color-preview"></div>
+                        <div class="color-info">
+                            <code id="colorValue" class="color-value">rgb(0, 0, 0)</code>
+                            <button id="copyButton" class="copy-btn" title="Copy color value">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Control Panel -->
+                    <div class="control-panel">
+                        <div class="panel-header">
+                            <h3 id="algorithmTitle">Algorithm</h3>
+                            <p id="algorithmDescription">Description</p>
+                        </div>
+                        <div id="controlsContainer" class="controls-container"></div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
